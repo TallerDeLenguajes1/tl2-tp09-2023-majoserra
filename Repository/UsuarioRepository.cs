@@ -39,7 +39,7 @@ namespace EspacioRepositorios
                     while (reader.Read())
                     {
                         var usuario = new Usuario();
-                        usuario.Id = Convert.ToInt32(reader["id_usuario"]);
+                        usuario.Id = Convert.ToInt32(reader["id"]);
                         usuario.NombreDeUsuario = reader["nombre_de_usuario"].ToString();
                         usuarios.Add(usuario);
                     }
@@ -68,14 +68,14 @@ namespace EspacioRepositorios
             SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
             var usuario = new Usuario();
             SQLiteCommand command = connection.CreateCommand();
-            command.CommandText = $"SELECT * FROM Usuario WHERE id_usuario = @id";
+            command.CommandText = $"SELECT * FROM Usuario WHERE id = @id";
             command.Parameters.Add(new SQLiteParameter("@id", id));
             connection.Open();
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    usuario.Id = Convert.ToInt32(reader["id_usuario"]);
+                    usuario.Id = Convert.ToInt32(reader["id"]);
                     usuario.NombreDeUsuario = reader["nombre_de_usuario"].ToString();
                 }
             }
@@ -87,7 +87,7 @@ namespace EspacioRepositorios
         {
             SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
             SQLiteCommand command = connection.CreateCommand();
-            command.CommandText = $"DELETE FROM Usuario WHERE id_usuario = @id;";
+            command.CommandText = $"DELETE FROM Usuario WHERE id = @id;";
             command.Parameters.Add(new SQLiteParameter("@id", id));
             connection.Open();
             command.ExecuteNonQuery();

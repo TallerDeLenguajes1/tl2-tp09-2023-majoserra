@@ -9,17 +9,18 @@ namespace EspacioRepositorios
 
         public void CrearTablero(Tablero tablero)
         {
-            var query = $"INSERT INTO Tablero (id_usuario_propietario, nombre, descripcion) VALUES (@id_propietario, @nombre, @descripcion)";
+            var query = $"INSERT INTO Tablero (id_usuario_propietario,nombre,descripcion) VALUES (@idUsuario, @nombre, @descripcion);";
             using (SQLiteConnection connection = new SQLiteConnection(cadenaConexion))
             {
 
-                connection.Open();
+                
                 var command = new SQLiteCommand(query, connection);
 
-                command.Parameters.Add(new SQLiteParameter("@id_usuario_propietario", tablero.Id_usuario_propetario));
+                command.Parameters.Add(new SQLiteParameter("@idUsuario", tablero.Id_usuario_propetario));
                 command.Parameters.Add(new SQLiteParameter("@nombre", tablero.Nombre));
                 command.Parameters.Add(new SQLiteParameter("@descripcion", tablero.Descripcion));
-
+                
+                connection.Open();
                 command.ExecuteNonQuery();
 
                 connection.Close();
@@ -31,7 +32,7 @@ namespace EspacioRepositorios
             SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
             SQLiteCommand command = connection.CreateCommand();
             // No usar así usar, el AddParameter
-            command.CommandText = $"UPDATE directors SET id_usuario_propietario = '{tablero.Id_usuario_propetario}', nombre = '{tablero.Nombre}', descripcion = '{tablero.Descripcion}' WHERE id = '{tablero.Id}';";
+            command.CommandText = $"UPDATE Tablero SET id_usuario_propietario = '{tablero.Id_usuario_propetario}', nombre = '{tablero.Nombre}', descripcion = '{tablero.Descripcion}' WHERE id = '{tablero.Id}';";
             connection.Open();
             command.ExecuteNonQuery();
             connection.Close();
