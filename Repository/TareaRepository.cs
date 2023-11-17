@@ -4,7 +4,7 @@ using EspacioTablero;
 namespace EspacioRepositorios
 {
     class TareaRepository: ITareaRepository{
-    private string cadenaConexion = "Data Source=DB/;Cache=Shared";
+    private string cadenaConexion = "Data Source=DB/kanban.db;Cache=Shared";
 
         public void CrearTarea(int idTablero, Tarea tarea)
         {
@@ -27,12 +27,31 @@ namespace EspacioRepositorios
                 connection.Close();
             }
         }
-        public void Update(int id, Tarea tarea)
+        public void Update(int id, string nombreT)
+        {
+            using (SQLiteConnection connection = new SQLiteConnection(cadenaConexion))
+            {
+                connection.Open();
+
+                using (SQLiteCommand command = connection.CreateCommand())
+                {
+                    // Usar parámetros en lugar de concatenar valores en la cadena de consulta
+                    command.CommandText = "UPDATE Tarea SET nombre = @nombre WHERE id = @id;";
+                    command.Parameters.Add(new SQLiteParameter("@nombre", nombreT));
+                    command.Parameters.Add(new SQLiteParameter("@id", id));
+
+                    command.ExecuteNonQuery();
+                }
+
+                connection.Close();
+            }
+        }
+        public void UpdateEstado(int id, EstadoTarea estado)
         {
             SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
             SQLiteCommand command = connection.CreateCommand();
             // No usar así usar, el AddParameter
-            var query = $"UPDATE Tarea SET id_tablero = '{tarea.Id_tablero}', nombre = ('{tarea.Nombre}'), estado = '{tarea.Estado}', descripcion = '{tarea.Descripcion}', color = '{tarea.Color}', id_usuario_asignado = '{tarea.Id_usuario_asignado}' WHERE id_tarea = '{tarea.Id}';";
+            var query = $"UPDATE Tarea SET estado = ('{estado}') WHERE id = '{id}';";
             connection.Open();
             command.ExecuteNonQuery();
             connection.Close();
@@ -42,14 +61,14 @@ namespace EspacioRepositorios
             SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
             var tarea = new Tarea();
             SQLiteCommand command = connection.CreateCommand();
-            command.CommandText = $"SELECT * FROM Tarea WHERE id_tarea = @id";
+            command.CommandText = $"SELECT * FROM Tarea WHERE id = @id";
             command.Parameters.Add(new SQLiteParameter("@id", id));
             connection.Open();
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    tarea.Id = Convert.ToInt32(reader["id_tarea"]);
+                    tarea.Id = Convert.ToInt32(reader["id"]);
                     tarea.Id_tablero = Convert.ToInt32(reader["id_tablero"]);
                     tarea.Nombre = reader["nombre"].ToString();
                     tarea.Estado = (EstadoTarea)Enum.ToObject(typeof(EstadoTarea), Convert.ToInt32(reader["estado"])); // Hacer metodo por separado?
@@ -62,77 +81,72 @@ namespace EspacioRepositorios
 
             return tarea;
         }
-        public List<Tarea> GetTareaUsuario(int idUsuario)
+    public List<Tarea> GetTareaUsuario(int idUsuario)
+    {
+        var queryString = @"SELECT * FROM Tarea WHERE id_usuario_asignado = @idUsuario;";
+        List<Tarea> tareas = new List<Tarea>();
+
+        using (SQLiteConnection connection = new SQLiteConnection(cadenaConexion))
         {
-            SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
-            List<Tarea> tareas = new List<Tarea>();
-            SQLiteCommand command = connection.CreateCommand();
-            command.CommandText = $"SELECT * FROM Tarea WHERE id_usuario_asignado = @asignado";
-            command.Parameters.Add(new SQLiteParameter("@asignado", idUsuario));
+            SQLiteCommand command = new SQLiteCommand(queryString, connection);
+            command.Parameters.Add(new SQLiteParameter("@idUsuario", idUsuario)); // Agrega el parámetro
+
             connection.Open();
+
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    var tarea = new Tarea
-                    {
-                        Id = Convert.ToInt32(reader["id_tarea"]),
-                        Id_tablero = Convert.ToInt32(reader["id_tablero"]),
-                        Nombre = reader["nombre"].ToString(),
-                        Estado = (EstadoTarea)Enum.ToObject(typeof(EstadoTarea), Convert.ToInt32(reader["estado"])), // Hacer metodo por separado?
-                        Descripcion = reader["descricion"].ToString(),
-                        Color = reader["color"].ToString(),
-                        Id_usuario_asignado = Convert.ToInt32(reader["id_usuario_asignado"])
-                    };
+                    Tarea tarea = new Tarea();
+                    tarea.Id = Convert.ToInt32(reader["id"]);
+                    tarea.Id_tablero = Convert.ToInt32(reader["id_tablero"]);
+                    tarea.Nombre = reader["nombre"].ToString();
+                    tarea.Estado = (EstadoTarea)Convert.ToInt32(reader["estado"]);
+                    tarea.Descripcion = reader["descripcion"].ToString();
+                    tarea.Color = reader["color"].ToString();
+                    tarea.Id_usuario_asignado = Convert.ToInt32(reader["id_usuario_asignado"]); // Corrige aquí
                     tareas.Add(tarea);
                 }
             }
             connection.Close();
-
+        }
             return tareas;
         }
-        public List<Tarea> GetTareaTablero(int idTablero)
+    public List<Tarea> GetTareaTablero(int idTablero)
+    {
+        var queryString = @"SELECT * FROM Tarea WHERE id_tablero = @idTablero;";
+        List<Tarea> tareas = new List<Tarea>();
+
+        using (SQLiteConnection connection = new SQLiteConnection(cadenaConexion))
         {
-            SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
-            List<Tarea> tareas = new List<Tarea>();
-            SQLiteCommand command = connection.CreateCommand();
-            command.CommandText = $"SELECT * FROM Tarea WHERE id_tablero = @tablero";
-            command.Parameters.Add(new SQLiteParameter("@tablero", idTablero));
+            SQLiteCommand command = new SQLiteCommand(queryString, connection);
+            command.Parameters.Add(new SQLiteParameter("@idTablero", idTablero)); // Agrega el parámetro
+
             connection.Open();
+
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    var tarea = new Tarea
-                    {
-                        Id = Convert.ToInt32(reader["id_tarea"]),
-                        Id_tablero = Convert.ToInt32(reader["id_tablero"]),
-                        Nombre = reader["nombre"].ToString(),
-                        Estado = (EstadoTarea)Enum.ToObject(typeof(EstadoTarea), Convert.ToInt32(reader["estado"])), // Hacer metodo por separado?
-                        Descripcion = reader["descricion"].ToString(),
-                        Color = reader["color"].ToString(),
-                        Id_usuario_asignado = Convert.ToInt32(reader["id_usuario_asignado"])
-                    };
+                    Tarea tarea = new Tarea();
+                    tarea.Id = Convert.ToInt32(reader["id"]);
+                    tarea.Id_tablero = Convert.ToInt32(reader["id_tablero"]);
+                    tarea.Nombre = reader["nombre"].ToString();
+                    tarea.Estado = (EstadoTarea)Convert.ToInt32(reader["estado"]);
+                    tarea.Descripcion = reader["descripcion"].ToString();
+                    tarea.Color = reader["color"].ToString();
+                    tarea.Id_usuario_asignado = Convert.ToInt32(reader["id_usuario_asignado"]); // Corrige aquí
                     tareas.Add(tarea);
                 }
             }
             connection.Close();
-
-            return tareas;
         }
-        public void RemoveTarea(int id)
-        {
-            SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
-            SQLiteCommand command = connection.CreateCommand();
-            command.CommandText = $"DELETE FROM Tarea WHERE id_tarea = @id;";
-            command.Parameters.Add(new SQLiteParameter("@id", id));
-            connection.Open();
-            command.ExecuteNonQuery();
-            connection.Close();
-        }
+        return tareas;
+    }
+    
         public void AsignarUsuario(int idTarea, int idUsuario)
         {
-            var query = $"UPDATE Tarea SET id_usuario_asignado = (@usuario) WHERE id_tarea = (@id);";
+            var query = $"UPDATE Tarea SET id_usuario_asignado = (@usuario) WHERE id = (@id);";
             using (SQLiteConnection connection = new SQLiteConnection(cadenaConexion))
             {
                 connection.Open();
@@ -146,6 +160,17 @@ namespace EspacioRepositorios
 
                 connection.Close();
             }
+        }
+        public void RemoveTarea(int id)
+        {
+            // usar using
+            SQLiteConnection connection = new SQLiteConnection(cadenaConexion);
+            SQLiteCommand command = connection.CreateCommand();
+            // usar AddParameter
+            command.CommandText = $"DELETE FROM tarea WHERE id = '{id}';";
+            connection.Open();
+            command.ExecuteNonQuery();
+            connection.Close();
         }
 
     }
